@@ -4,7 +4,7 @@ function Welcome()
 {
 cd /root
 clear
-printf "                Server Time : " && date -R
+echo -n "                      Server Time :  " && date "+%F [%T]       ";
 echo "            ======================================================";
 echo "            |                    serverSpeeder                   |";
 echo "            |                                         for Linux  |";
@@ -44,9 +44,12 @@ yum >/dev/null 2>&1
 [ -f /etc/lsb-release ] && KNA=$(awk -F'[="]+' '/DISTRIB_ID/{print $2}' /etc/lsb-release)
 KNB=$(getconf LONG_BIT)
 Eth=$(ifconfig |grep -B1 "$(wget -qO- ipv4.icanhazip.com)" |awk -F '[: ]' '/eth/{ print $1 }')
+[ -z "$Eth" ] && echo -ne "It is seem that you server not as usually. \nPlease input your public Ethernet: " && read tmpEth;
+tmpEth=$(echo "$tmpEth"|sed 's/[ \t]*//g') && [ -n "$tmpEth" ] && [ -z $(echo "$tmpEth" |grep -E -i "venet") ] && [[ -n $(ifconfig |grep -E "$tmpEth") ]] && Eth="$tmpEth";
 [ -z "$Eth" ] && echo "I can not find the server pubilc Ethernet! " && exit 1
-MyKernel=$(curl -k -q --progress-bar 'https://raw.githubusercontent.com/0oVicero0/serverSpeeder_kernel/master/serverSpeeder.txt' |grep "$KNA/" |grep "/x$KNB/" |grep "/$(uname -r)/" |sort -k3 -t '_' |tail -n 1)
-[ -z "$MyKernel" ] && echo -ne "Kernel not be matched! \nYou should change kernel manually, ang try again! \n" && exit 1
+URLKernel='https://raw.githubusercontent.com/0oVicero0/serverSpeeder_kernel/master/serverSpeeder.txt'
+MyKernel=$(curl -k -q --progress-bar "$URLKernel" |grep "$KNA/" |grep "/x$KNB/" |grep "/$(uname -r)/" |sort -k3 -t '_' |tail -n 1)
+[ -z "$MyKernel" ] && echo -ne "Kernel not be matched! \nYou should change kernel manually, and try again! \n\nView the link to get detaits: \n"$URLKernel" \n\n\n" && exit 1
 pause;
 }
 
@@ -95,7 +98,7 @@ chattr -R -i /appex >/dev/null 2>&1
 bash /appex/bin/lotServer.sh uninstall -f >/dev/null 2>&1
 rm -rf /appex >/dev/null 2>&1
 rm -rf /root/appex* >/dev/null 2>&1
-echo 'lotServer have been removed! '
+echo -ne 'lotServer have been removed! \n\n\n'
 exit 0
 }
 
@@ -109,18 +112,11 @@ MAC=$(ifconfig "$Eth" |awk '/HWaddr/{ print $5 }')
 [ -z "$MAC" ] && MAC=$(ifconfig "$Eth" |awk '/ether/{ print $2 }')
 [ -z "$MAC" ] && Unstall && echo "Not Found MAC address! " && exit 1
 wget --no-check-certificate -q -O "/appex/etc/apx.lic" "http://serverspeeder.azurewebsites.net/lic?mac=$MAC"
-SIZE=$(du -b /appex/etc/apx.lic |awk '{ print $1 }')
-if [[ $SIZE == '0' ]]; then
-echo "Lic download error, try again! "
-echo "Please wait..."
-sleep 7;
-dl-Lic;
-else
-echo "Lic download success! "
+[ "$(du -b /appex/etc/apx.lic |awk '{ print $1 }')" -ne '152' ] && Unstall && echo "Error! I can not generate the Lic for you, Please try again later! " && exit 1
+echo "Lic generate success! "
 chattr +i /appex/etc/apx.lic
 rm -rf /appex/bin/ethtool >/dev/null 2>&1
 cp -f $ethtooldir /appex/bin
-fi
 }
 
 function ServerSpeeder()
